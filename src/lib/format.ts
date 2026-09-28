@@ -21,18 +21,6 @@ export function formatUsd(value: number | null | undefined): string {
   return `$${compact(value)}`;
 }
 
-/** Memecoin fiyatları için anlamlı basamaklı gösterim: $0,00001234 */
-export function formatPrice(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
-  if (value >= 1) return `$${value.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}`;
-  return `$${value.toLocaleString('tr-TR', { maximumSignificantDigits: 4 })}`;
-}
-
-export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
-  return Math.abs(value) >= 10_000 ? compact(value) : integer.format(value);
-}
-
 /** İşaretli yüzde (Türkçe yazım): +%12,4 / −%3,1 */
 export function formatPct(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
@@ -42,21 +30,6 @@ export function formatPct(value: number | null | undefined, digits = 1): string 
 
 export function formatRatio(value: number, digits = 2): string {
   return `${value.toLocaleString('tr-TR', { maximumFractionDigits: digits })}×`;
-}
-
-export function shortAddress(address: string): string {
-  return address.length <= 12 ? address : `${address.slice(0, 4)}…${address.slice(-4)}`;
-}
-
-/** Referans ana göre "3 dk önce". Sunucu ve istemci aynı referansı kullansın diye `now` parametredir. */
-export function timeAgo(iso: string, now: number): string {
-  const sec = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
-  if (sec < 60) return `${sec} sn önce`;
-  const min = Math.round(sec / 60);
-  if (min < 60) return `${min} dk önce`;
-  const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr} sa önce`;
-  return `${Math.round(hr / 24)} gün önce`;
 }
 
 export const DAY_NAMES = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const;

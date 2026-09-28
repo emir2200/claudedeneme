@@ -1,79 +1,64 @@
-// GeckoTerminal — havuz keşfi (yeni ve trend havuzlar).
-// Uç noktalar: GET /networks/{network}/new_pools ve /networks/{network}/trending_pools
-// (?page=N&include=base_token, JSON:API biçimi; ikisi aynı havuz kaydını döner).
-// Ücretsiz katman ~30 istek/dk. Anahtar gerekmez.
+// GeckoTerminal — bir ağdaki en yüksek hacimli havuzlar ve saatlik OHLCV.
+// Uç noktalar:
+//   GET /networks/{network}/pools?page=1&sort=h24_volume_usd_desc
+//   GET /networks/{network}/pools/{havuz}/ohlcv/hour?aggregate=1&limit=N&currency=usd
+//     → data.attributes.ohlcv_list = [[unixSaniye, açılış, yüksek, düşük, kapanış, hacimUsd], …]
+// Ücretsiz katman dakikada ~30 istek; anahtar gerekmez.
 
 import { z } from 'zod';
-import { getConfig } from '../config';
+import type { HourlyPoint } from '@/lib/analytics/hours';
+import { baseUrls } from '../config';
 import { fetchJson, RateLimiter } from './http';
 
-const poolSchema = z.object({
-  id: z.string(),
-  attributes: z.object({
-    address: z.string(),
-    name: z.string(),
-    pool_created_at: z.string().nullish(),
-    reserve_in_usd: z.string().nullish(),
-  }),
-  relationships: z.object({
-    base_token: z.object({ data: z.object({ id: z.string() }) }),
-    dex: z.object({ data: z.object({ id: z.string() }) }).nullish(),
-  }),
-});
-
-const includedSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  attributes: z.object({ address: z.string(), name: z.string(), symbol: z.string() }).partial(),
-});
-
-const responseSchema = z.object({
-  data: z.array(poolSchema),
-  included: z.array(includedSchema).nullish(),
-});
-
-export interface DiscoveredPool {
-  poolAddress: string;
-  tokenAddress: string;
-  name: string;
-  symbol: string;
-  dexId: string | null;
-  poolCreatedAt: Date | null;
-}
-
+const HEADERS = { accept: 'application/json;version=20230302' };
 const limiter = new RateLimiter(25);
 
-export type PoolFeed = 'new_pools' | 'trending_pools';
+export const poolsSchema = z.object({
+  data: z.array(
+    z.object({
+      attributes: z.object({
+        address: z.string(),
+        name: z.string(),
+        volume_usd: z.object({ h24: z.string().nullish() }).partial().nullish(),
+      }),
+    }),
+  ),
+});
 
-export async function fetchPools(network: string, feed: PoolFeed, page = 1): Promise<DiscoveredPool[]> {
-  const base = getConfig().GECKOTERMINAL_BASE_URL;
-  const url = `${base}/networks/${encodeURIComponent(network)}/${feed}?page=${page}&include=base_token`;
-  const res = await fetchJson(url, {
-    schema: responseSchema,
-    limiter,
-    headers: { accept: 'application/json;version=20230302' },
-  });
-  return parsePools(res, network);
+export const ohlcvSchema = z.object({
+  data: z.object({
+    attributes: z.object({ ohlcv_list: z.array(z.array(z.number())) }),
+  }),
+});
+
+export interface TopPool {
+  address: string;
+  name: string;
+  volume24hUsd: number | null;
 }
 
-export function parsePools(res: z.infer<typeof responseSchema>, network: string): DiscoveredPool[] {
-  const tokens = new Map((res.included ?? []).filter((i) => i.type === 'token').map((i) => [i.id, i.attributes]));
-  return res.data.flatMap((pool) => {
-    const tokenId = pool.relationships.base_token.data.id;
-    const token = tokens.get(tokenId);
-    // Kimlik biçimi "<network>_<adres>".
-    const tokenAddress = token?.address ?? tokenId.slice(network.length + 1);
-    if (!tokenAddress) return [];
-    const [poolBase] = pool.attributes.name.split(' / ');
-    return [
-      {
-        poolAddress: pool.attributes.address,
-        tokenAddress,
-        name: token?.name ?? poolBase ?? tokenAddress,
-        symbol: token?.symbol ?? poolBase ?? '?',
-        dexId: pool.relationships.dex?.data.id ?? null,
-        poolCreatedAt: pool.attributes.pool_created_at ? new Date(pool.attributes.pool_created_at) : null,
-      },
-    ];
-  });
+export function parsePools(res: z.infer<typeof poolsSchema>): TopPool[] {
+  return res.data
+    .map((p) => {
+      const v = Number(p.attributes.volume_usd?.h24);
+      return { address: p.attributes.address, name: p.attributes.name, volume24hUsd: Number.isFinite(v) ? v : null };
+    })
+    .sort((a, b) => (b.volume24hUsd ?? 0) - (a.volume24hUsd ?? 0));
+}
+
+export function parseOhlcv(res: z.infer<typeof ohlcvSchema>): HourlyPoint[] {
+  return res.data.attributes.ohlcv_list
+    .filter((row) => row.length >= 6 && Number.isFinite(row[0]) && Number.isFinite(row[5]))
+    .map((row) => ({ hourStart: row[0]! * 1000, volumeUsd: row[5]! }));
+}
+
+export async function fetchTopPools(network: string, count: number): Promise<TopPool[]> {
+  const url = `${baseUrls().geckoterminal}/networks/${encodeURIComponent(network)}/pools?page=1&sort=h24_volume_usd_desc`;
+  const res = await fetchJson(url, { schema: poolsSchema, limiter, headers: HEADERS, retries: 2 });
+  return parsePools(res).slice(0, count);
+}
+
+export async function fetchHourlyVolume(network: string, pool: string, limit: number): Promise<HourlyPoint[]> {
+  const url = `${baseUrls().geckoterminal}/networks/${encodeURIComponent(network)}/pools/${encodeURIComponent(pool)}/ohlcv/hour?aggregate=1&limit=${limit}&currency=usd`;
+  return parseOhlcv(await fetchJson(url, { schema: ohlcvSchema, limiter, headers: HEADERS, retries: 2 }));
 }

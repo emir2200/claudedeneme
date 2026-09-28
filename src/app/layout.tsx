@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Memecoin Haritası',
-  description: 'Solana, BNB Chain ve Robinhood Chain için memecoin ısı haritası ve aktivite analitiği',
+  title: 'Chain Aktivite Radarı',
+  description: "Günün, haftanın ve ayın en aktif chain'leri ve her chain'in gün içindeki en aktif trade saatleri",
 };
 
 export const viewport: Viewport = {

@@ -7,9 +7,6 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
-# Prisma'nın ürettiği istemci (npm install sırasında yeniden üretilir)
-src/generated/
-
 # Ortam değişkenleri (örnek dosya hariç)
 .env
 .env.*

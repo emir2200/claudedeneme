@@ -1,95 +1,37 @@
-// Takip edilen ağların tek kaynağı. Hem sunucu hem istemci tarafında kullanılır,
-// bu yüzden burada gizli bilgi veya sağlayıcıya özel kimlik tutulmaz
-// (onlar için bkz. src/server/config.ts).
+// Sıralamaya giren chain'ler ve sağlayıcılardaki kimlikleri.
+// Yeni bir chain eklemek için bu listeye bir satır eklemek yeterlidir.
+//
+// - llama: DefiLlama `/overview/dexs/{llama}` kimliği (küçük harf chain adı)
+// - gecko: GeckoTerminal ağ kimliği (`/networks/{gecko}/...`)
+// Kimlikler sağlayıcı belgelerine göre yazıldı. Robinhood Chain kimlikleri tahmindir;
+// sağlayıcı o chain'i henüz listelemiyorsa panel onu "veri yok" olarak gösterir.
 
-export const CHAIN_IDS = ['solana', 'bsc', 'robinhood'] as const;
-export type ChainId = (typeof CHAIN_IDS)[number];
-
-/** Prisma `Chain` enum değerleri. */
-export type PrismaChain = 'SOLANA' | 'BSC' | 'ROBINHOOD';
-
-export interface ChainMeta {
-  id: ChainId;
-  prisma: PrismaChain;
+export interface ChainDef {
+  id: string;
   name: string;
-  shortName: string;
-  /**
-   * Kategorik kimlik rengi. Koyu panel yüzeyinde (#10131a) renk körlüğü (CVD ΔE ≥ 8),
-   * normal görüş (ΔE ≥ 15) ve kontrast (≥ 3:1) kontrollerinden geçen doğrulanmış palet:
-   * mor (Solana), sarı (BNB), aqua (Robinhood).
-   */
-  color: string;
-  nativeSymbol: string;
-  /** İşlem bağlantısı ön eki; bilinmiyorsa null. */
-  explorerTxUrl: string | null;
-  explorerName: string;
-  /** Token sayfası bağlantısı ön eki; bilinmiyorsa null. */
-  explorerTokenUrl: string | null;
-  /** dexscreener.com/<slug>/<adres> için zincir kimliği; doğrulanmamışsa null. */
-  dexscreenerSlug: string | null;
+  llama: string;
+  gecko: string;
 }
 
-export const CHAINS: Record<ChainId, ChainMeta> = {
-  solana: {
-    id: 'solana',
-    prisma: 'SOLANA',
-    name: 'Solana',
-    shortName: 'SOL',
-    color: '#9085e9',
-    nativeSymbol: 'SOL',
-    explorerTxUrl: 'https://solscan.io/tx/',
-    explorerName: 'Solscan',
-    explorerTokenUrl: 'https://solscan.io/token/',
-    dexscreenerSlug: 'solana',
-  },
-  bsc: {
-    id: 'bsc',
-    prisma: 'BSC',
-    name: 'BNB Chain',
-    shortName: 'BNB',
-    color: '#c98500',
-    nativeSymbol: 'BNB',
-    explorerTxUrl: 'https://bscscan.com/tx/',
-    explorerName: 'BscScan',
-    explorerTokenUrl: 'https://bscscan.com/token/',
-    dexscreenerSlug: 'bsc',
-  },
-  robinhood: {
-    id: 'robinhood',
-    prisma: 'ROBINHOOD',
-    name: 'Robinhood Chain',
-    shortName: 'HOOD',
-    color: '#199e70',
-    nativeSymbol: 'ETH',
-    explorerTxUrl: process.env.NEXT_PUBLIC_ROBINHOOD_EXPLORER_TX_URL || null,
-    explorerName: 'Blok gezgini',
-    explorerTokenUrl: process.env.NEXT_PUBLIC_ROBINHOOD_EXPLORER_TOKEN_URL || null,
-    dexscreenerSlug: null,
-  },
-};
+export const CHAINS: readonly ChainDef[] = [
+  { id: 'ethereum', name: 'Ethereum', llama: 'ethereum', gecko: 'eth' },
+  { id: 'solana', name: 'Solana', llama: 'solana', gecko: 'solana' },
+  { id: 'bsc', name: 'BNB Chain', llama: 'bsc', gecko: 'bsc' },
+  { id: 'base', name: 'Base', llama: 'base', gecko: 'base' },
+  { id: 'arbitrum', name: 'Arbitrum', llama: 'arbitrum', gecko: 'arbitrum' },
+  { id: 'tron', name: 'Tron', llama: 'tron', gecko: 'tron' },
+  { id: 'polygon', name: 'Polygon', llama: 'polygon', gecko: 'polygon_pos' },
+  { id: 'avalanche', name: 'Avalanche', llama: 'avalanche', gecko: 'avax' },
+  { id: 'optimism', name: 'Optimism', llama: 'optimism', gecko: 'optimism' },
+  { id: 'sui', name: 'Sui', llama: 'sui', gecko: 'sui-network' },
+  { id: 'sonic', name: 'Sonic', llama: 'sonic', gecko: 'sonic' },
+  { id: 'ton', name: 'TON', llama: 'ton', gecko: 'ton' },
+  { id: 'aptos', name: 'Aptos', llama: 'aptos', gecko: 'aptos' },
+  { id: 'robinhood', name: 'Robinhood Chain', llama: 'robinhood', gecko: 'robinhood' },
+];
 
-export const CHAIN_LIST: ChainMeta[] = CHAIN_IDS.map((id) => CHAINS[id]);
+const BY_ID = new Map(CHAINS.map((c) => [c.id, c]));
 
-export function chainFromPrisma(value: PrismaChain): ChainId {
-  const found = CHAIN_LIST.find((c) => c.prisma === value);
-  if (!found) throw new Error(`Bilinmeyen zincir: ${value}`);
-  return found.id;
-}
-
-export function chainToPrisma(id: ChainId): PrismaChain {
-  return CHAINS[id].prisma;
-}
-
-/** Adres karşılaştırmaları için kanonik biçim: EVM küçük harf, Solana (base58) olduğu gibi. */
-export function normalizeAddress(chain: ChainId, address: string): string {
-  return chain === 'solana' ? address : address.toLowerCase();
-}
-
-/** Bir token'ı doğrulamak için dış bağlantılar (blok gezgini, DEXScreener). */
-export function tokenLinks(chain: ChainId, address: string): Array<{ label: string; href: string }> {
-  const meta = CHAINS[chain];
-  const links: Array<{ label: string; href: string }> = [];
-  if (meta.explorerTokenUrl) links.push({ label: meta.explorerName, href: `${meta.explorerTokenUrl}${address}` });
-  if (meta.dexscreenerSlug) links.push({ label: 'DEXScreener', href: `https://dexscreener.com/${meta.dexscreenerSlug}/${address}` });
-  return links;
+export function findChain(id: string): ChainDef | undefined {
+  return BY_ID.get(id);
 }

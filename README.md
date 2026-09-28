@@ -1,68 +1,79 @@
-# Memecoin Haritası
+# Chain Aktivite Radarı
 
-**Solana, BNB Chain ve Robinhood Chain için memecoin ısı haritası ve aktivite analitiği.**
-Sıcak paranın hangi zincire aktığını, günde kaç token'ın $100K eşiğini aştığını, günün en çok
-konuşulan coin'ini ve narrative'ini, trade için en yoğun saatleri tek ekranda gösterir.
+**Günün, haftanın ve ayın en aktif chain'leri ve her chain'in gün içindeki en aktif trade saatleri.**
 
-![Dashboard](docs/ekran-goruntusu.png)
+Panel yalnızca gerçek veri gösterir. Veri kaynağına ulaşılamazsa uydurma rakam yerine
+"veri alınamadı" mesajı ve sebebi görünür.
 
-*Ekran görüntüsü demo modundandır; token adları ve rakamlar simülasyondur.*
+## Ne gösterir?
 
-## Özellikler
+| Bölüm | İçerik |
+| --- | --- |
+| **Dönem liderleri** | Günün, haftanın ve ayın en aktif chain'i: DEX hacmi, toplam içindeki payı, önceki döneme göre değişimi, ardından gelen iki chain |
+| **Chain sıralaması** | Tüm chain'lerin gün / hafta / ay sıralaması, pay çubuğu, değişim, son 30 günün eğrisi. Bir chain'e tıklayınca saatleri açılır |
+| **Gün içi en aktif trade saatleri** | Seçili chain için en aktif ve en sakin 3 saat, "şu an aktif mi?", 24 saatlik tipik gün grafiği (bugünün saatleriyle karşılaştırmalı), haftanın saatleri ısı matrisi. Yerel saat / UTC seçilebilir; her grafiğin tablo görünümü var |
 
-| Modül | Ne gösterir | Algoritma |
-| --- | --- | --- |
-| **Zincir Sıcaklık Haritası** | 3 zincir için 0–100 Activity Index; hacim (24s/1s), işlem sayısı, yeni havuz, TVL ısı hücreleri; 1 saatlik hacim payı ("sıcak para nerede?") | Kendi 7 günlük geçmişine göre persentil momentumu (%65) + hacim baskınlığı (%35) |
-| **100K+ Çıkış Sayacı** | Günlük (UTC) $100K piyasa değeri/likidite eşiğini ilk kez aşan token sayısı; bugünün temposu, 14 günlük karşılaştırmalı çubuk grafik, 30 günlük eğilim | 2 ardışık örnekle onay, manipülasyon filtresi, launchpad'den bağımsız |
-| **Günün Coin'i & Narrative** | Hype skoru en yüksek token; sahte kopyalara karşı tam kontrat adresi (CA), kopyalama düğmesi ve Solscan/BscScan/DEXScreener bağlantıları; sosyal hacim, Vol/MCap, sosyal/likidite oranı, risk bayrakları; en hızlı yükselen narrative | Etkileşim, mention hızı, devir ve fiyat ivmesinin persentil ağırlıklı toplamı |
-| **En Aktif Trade Zamanı** | 24 saat × 7 gün ısı matrisi, "şu an aktif mi?", son 4 saatin en sıcağı, haftanın en iyi 3 saatlik penceresi (yerel saat / UTC) | 4 haftalık medyan hacim + volatilite + insan işlem payı |
-| **Smart Money & Balinalar** | $10K+ swaplar, smart money etiketleri, zincir başına 1 saatlik net akış | Helius webhook + EVM `Swap` logları |
+## Kurulum ve çalıştırma
 
-Ayrıntılar: [docs/MIMARI.md](docs/MIMARI.md) (sistem mimarisi, veri akışı, önbellek, veritabanı,
-API planı) · [docs/ALGORITMALAR.md](docs/ALGORITMALAR.md) (formüller ve pseudo-code).
-
-## Hızlı başlangıç (demo modu, anahtar gerekmez)
-
-Node.js 20.9 veya üstü gerekir.
+Node.js 20.9 veya üstü ve internet bağlantısı yeterli. API anahtarı gerekmez.
 
 ```sh
 npm install
 npm run dev
 ```
 
-http://localhost:3000 adresini açın. Demo modu, tohumlanmış bir piyasa simülatörünün ürettiği ham
-veriyi **gerçek analitik hattından** geçirir: index, matris ve hype skorları canlı moddaki kodla
-aynı fonksiyonlarla hesaplanır. Başlıkta "DEMO VERİ" rozeti görünür.
+Ardından http://localhost:3000 adresini açın. `npm run dev` açık kaldığı sürece site çalışır.
 
-## Canlı mod
+Üretim için: `npm run build && npm start`.
 
-```sh
-docker compose up -d                 # PostgreSQL 16 + Redis 7
-cp .env.example .env                 # DATA_MODE=live yapın, anahtarları doldurun
-npm run db:deploy                    # migration'ları uygula
-npm run db:seed                      # (opsiyonel) 5 haftalık demo geçmişi yükle
-npm run worker                       # veri toplayıcı (ayrı terminalde)
-npm run build && npm start           # web
-```
+## Kullanılan API'ler
 
-Worker, sağlayıcılardan veri toplar, PostgreSQL'e yazar ve 30 saniyede bir hazır snapshot'ı Redis'e
-koyar. Web katmanı yalnızca bu snapshot'ı okur.
+| API | Adres | Ne için | Anahtar | Sınır |
+| --- | --- | --- | --- | --- |
+| **DefiLlama** | `api.llama.fi` | Chain başına günlük DEX hacmi → gün / hafta / ay sıralaması | Gerekmez | Cömert |
+| **GeckoTerminal** | `api.geckoterminal.com` | Chain'in en yüksek hacimli havuzları ve saatlik hacimleri → gün içi saatler | Gerekmez | Dakikada ~30 istek |
 
-| Ortam değişkeni | Gerekli mi | Açıklama |
-| --- | --- | --- |
-| `DATA_MODE` | — | `demo` (varsayılan) veya `live` |
-| `DATABASE_URL`, `REDIS_URL` | canlı | Altyapı |
-| `LUNARCRUSH_API_KEY` | opsiyonel | Sosyal metrikler; yoksa sosyal job atlanır |
-| `HELIUS_WEBHOOK_SECRET` | opsiyonel | Solana balina swapları için webhook yetkilendirmesi |
-| `BSC_RPC_URL`, `ROBINHOOD_RPC_URL` | opsiyonel | EVM balina taraması |
-| `ROBINHOOD_*` | kontrol edin | Robinhood Chain sağlayıcı kimlikleri (aşağıya bakın) |
-| `NEXT_PUBLIC_ROBINHOOD_EXPLORER_TX_URL`, `…_TOKEN_URL` | opsiyonel | Robinhood Chain blok gezgini bağlantıları; boşsa bağlantı gösterilmez |
-| `MILESTONE_USD`, `WHALE_MIN_USD`, `BOT_TX_PER_HOUR` | — | Eşikler |
+Sunucunun bu iki adrese internet erişimi olmalıdır. Kurumsal ağ, güvenlik duvarı veya
+bulut ortamı bu adresleri engelliyorsa panel "Kaynak erişimi reddetti" hatası gösterir.
 
-Tam liste: [`.env.example`](.env.example). Helius webhook'u için: Helius panelinde "enhanced"
-türünde bir webhook oluşturun, URL olarak `https://<alan-adınız>/api/webhooks/helius` girin, hesap
-listesine takip edilen token mint'lerini ekleyin ve "Authorization header" alanına
-`HELIUS_WEBHOOK_SECRET` değerini yazın.
+İsteğe bağlı iyileştirme (henüz eklenmedi): **Dune Analytics** (`api.dune.com`, anahtar gerekir)
+ile saatlik hacim, yalnızca en büyük havuzlardan değil chain'deki tüm DEX işlemlerinden hesaplanabilir.
+
+## Nasıl hesaplanır?
+
+**Aktivite ölçüsü:** chain'deki tüm DEX'lerin toplam işlem hacmi (USD).
+
+**Gün / hafta / ay** (`src/lib/analytics/rankings.ts`): DefiLlama'nın günlük serisinden,
+yalnızca tamamlanmış UTC günleriyle kayan pencereler:
+
+- gün = son tam gün, önceki güne göre değişim
+- hafta = son 7 gün, önceki 7 güne göre değişim
+- ay = son 30 gün, önceki 30 güne göre değişim
+
+Yeterli günü olmayan yeni chain'lerde DefiLlama'nın kendi 7 ve 30 günlük toplamı kullanılır; bu
+durumda değişim gösterilmez.
+
+**Gün içi saatler** (`src/lib/analytics/hours.ts`): Chain'in en yüksek 24 saatlik hacimli 8
+havuzunun son 28 günlük saatlik hacmi toplanır.
+
+- **Tipik gün:** her saat için 28 günün **medyanı**. Tek bir olağandışı gün profili bozmaz.
+- **En aktif ve en sakin saatler:** tipik günün en yüksek ve en düşük paylı 3 saatlik penceresi (gece yarısından sarar).
+- **Şu an:** son tamamlanan saatin hacmi, o saatin tipik hacmiyle karşılaştırılır. Seviye (aktif / normal / sakin), saatin tipik yoğunluğuna göre belirlenir. Hacim tipiğin 1,5 katını aşarsa seviye bir kademe yükselir, 0,6 katının altında kalırsa bir kademe düşer.
+- **Haftanın saatleri:** haftanın her saati için son 4 haftanın medyanı.
+
+Tüm hesaplar UTC'dir; arayüz tarayıcının saat dilimine çevirir.
+
+Sonuçlar sunucuda 30 dakika önbelleklenir. Kaynak geçici olarak yanıt vermezse son alınan
+veri "kaynak yanıt vermiyor" uyarısıyla gösterilir.
+
+## Chain listesi
+
+Sıralamaya giren chain'ler ve sağlayıcılardaki kimlikleri `src/lib/chains.ts` dosyasındadır:
+Ethereum, Solana, BNB Chain, Base, Arbitrum, Tron, Polygon, Avalanche, Optimism, Sui, Sonic, TON,
+Aptos ve Robinhood Chain. Yeni bir chain eklemek için listeye bir satır eklemek yeterli.
+
+Robinhood Chain'in kimlikleri tahmindir. Sağlayıcılar o chain'i listelemiyorsa sıralamanın
+altında "Veri yok: Robinhood Chain (Kaynak bu chain'i listelemiyor)" yazar.
 
 ## Komutlar
 
@@ -70,65 +81,28 @@ listesine takip edilen token mint'lerini ekleyin ve "Authorization header" alan�
 | --- | --- |
 | `npm run dev` | Geliştirme sunucusu |
 | `npm run build` / `npm start` | Üretim derlemesi / sunucusu |
-| `npm run worker` | Veri toplama worker'ı |
-| `npm test` | Birim testleri (Vitest) |
-| `TEST_DATABASE_URL=… npm test` | PostgreSQL'e karşı entegrasyon testleri de çalışır (veritabanı `prisma migrate deploy` ile hazırlanmalı; test tabloları temizler) |
+| `npm test` | Testler (Vitest) |
 | `npm run typecheck` | TypeScript kontrolü |
-| `npm run db:migrate` / `db:deploy` / `db:seed` | Prisma migration'ları ve demo verisi |
 
 ## Proje yapısı
 
 ```
-prisma/
-  schema.prisma            Token, ChainStats, VolumeByHour, SocialMetrics, LaunchDaily, WhaleTrade, …
-  migrations/              SQL migration'ları
-  seed.ts                  Demo geçmişini veritabanına yükler
 src/
-  app/                     Next.js App Router: sayfa + /api/dashboard, /api/health, /api/webhooks/helius
-  components/dashboard/    Panel bileşenleri (ısı haritası, 100K sayacı, 24x7 matris, …)
-  components/ui/           Ortak UI parçaları (Panel, Sparkline, Meter, …)
-  lib/analytics/           Saf algoritmalar: activityIndex, milestones, tradeWindows, hype,
-                           narratives, whales, snapshot
-  lib/                     Zincir tanımları, tipler, biçimlendirme, tema
-  server/providers/        DEXScreener, GeckoTerminal, DefiLlama, LunarCrush, Helius, EVM adaptörleri
-  server/jobs/             Worker job'ları
-  server/snapshot/         PostgreSQL → snapshot, önbellekli okuma
-  server/simulation.ts     Demo modu piyasa simülatörü
-  worker/index.ts          Worker giriş noktası ve job takvimi
-tests/                     Birim + entegrasyon testleri
+  app/                       Sayfa ve API uçları: /api/rankings, /api/hours?chain=…
+  components/dashboard/      Dönem liderleri, sıralama tablosu, saat analizi
+  components/ui/             Ortak parçalar (Panel, Sparkline, Meter, …)
+  lib/analytics/             Saf hesaplamalar: rankings.ts, hours.ts
+  lib/chains.ts              Chain listesi ve sağlayıcı kimlikleri
+  server/providers/          DefiLlama ve GeckoTerminal istemcileri
+  server/reports.ts          Raporları üretir, önbellekler, hataları açıklar
+tests/                       Birim ve uçtan uca (fetch taklitli) testler
 ```
 
-## Arayüz ve tasarım kararları
+## Bilinen sınırlamalar
 
-- **Koyu, terminal tarzı arayüz:** paneller, ince ızgara dokusu, tablo hizalı rakamlar. Metin renkleri
-  panel yüzeyinde en az 4,5:1 kontrastlıdır.
-- **Zincir renkleri** (Solana mor, BNB sarı, Robinhood aqua) koyu yüzeyde renk körlüğü simülasyonu
-  (ΔE ≥ 8), normal görüş ayrımı (ΔE ≥ 15) ve ≥ 3:1 kontrast kontrollerinden geçen doğrulanmış
-  kategorik palettir. Zincir kimliği hiçbir yerde yalnızca renkle verilmez; her zaman ad veya kısaltma
-  da yazılır.
-- **Isı rampası** koyu bordodan sarıya giden, açıklığı düzenli artan tek bir ölçektir. Düşük değerler
-  panel yüzeyine doğru kaybolur. Hücre değerleri metin olarak da yazılır.
-- Her grafiğin **tablo görünümü** vardır. 24x7 matris ok tuşlarıyla gezilebilir; hücre açıklamaları
-  ekran okuyuculara duyurulur.
-- Sayılar belirsizlik olmasın diye `$340 bin · $1,2 Mn · $12,3 Mr` biçimindedir. Türkçedeki "B"
-  (bin) kısaltması kriptoda "billion" ile karışacağı için kullanılmaz.
-- Masaüstünde 3 sütun, tablette 2, telefonda 1 sütun; sayfada yatay kaydırma yoktur.
-
-## Doğrulanmamış varsayımlar
-
-- **Robinhood Chain kimlikleri.** Robinhood Chain'in DEXScreener / GeckoTerminal / DefiLlama
-  kimlikleri ve zincir kimliği `ROBINHOOD_*` ortam değişkenlerinden okunur. Varsayılan değerler
-  (`robinhood`) tahmindir; canlıya almadan önce sağlayıcı belgelerinden doğrulayın. Kimlik yanlışsa
-  panel o zincir için "veri yok" kartı gösterir, sıfır aktivite göstermez.
-- **Sağlayıcı yanıt biçimleri.** Adaptörler sağlayıcıların belgelenmiş yanıt biçimlerine göre yazıldı
-  ve bu biçimleri taklit eden fikstürlerle test edildi. Geliştirme ortamında dış API'lere ağ erişimi
-  olmadığı için canlı yanıtlarla denenmedi. Her yanıt şema doğrulamasından geçer; biçim farklıysa
-  job hatayı log'lar, sessizce yanlış veri yazmaz. LunarCrush alan adları özellikle kontrol edilmeli.
-- **Launchpad sezgileri.** Pump.fun adresleri `…pump`, Four.meme adresleri `…4444` son ekiyle ve
-  DEX kimlikleriyle tanınır (`src/lib/analytics/launchpads.ts`). Bu yalnızca kırılımı etkiler,
-  100K sayımını etkilemez.
-- **Yeni havuz sayısı** GeckoTerminal'in sayfalı akışından geldiği için yoğun saatlerde bir alt
-  sınırdır. Kesin sayım için önerilen genişlemeler: bkz. [MIMARI.md §5](docs/MIMARI.md#5-veri-kaynakları-ve-api-entegrasyon-planı).
+- Gün içi saatler chain'in tamamını değil, en büyük 8 havuzunu temsil eder.
+- GeckoTerminal'in istek sınırı yüzünden bir chain'in saatleri ilk açılışta 10–20 saniyede yüklenebilir; sonra önbellekten gelir.
+- Adaptörler sağlayıcıların belgelenmiş yanıt biçimlerine göre yazıldı ve bu biçimi taklit eden verilerle test edildi. Geliştirme ortamında bu API'lere ağ erişimi olmadığından canlı yanıtla denenmedi. Her yanıt şema doğrulamasından geçer; biçim farklıysa panel hata gösterir.
 
 ---
 

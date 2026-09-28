@@ -6,10 +6,8 @@ export default function ErrorPage({ reset }: { error: Error; reset: () => void }
   return (
     <div className="mx-auto mt-24 max-w-md rounded-xl border border-line bg-panel p-6 text-center">
       <TriangleAlert className="mx-auto size-8 text-warn" aria-hidden />
-      <h1 className="mt-3 text-lg font-semibold text-ink">Veri şu anda yüklenemiyor</h1>
-      <p className="mt-1 text-sm text-muted">
-        Canlı modda veritabanı veya Redis bağlantısını kontrol edin; demo modu için <code>DATA_MODE=demo</code>.
-      </p>
+      <h1 className="mt-3 text-lg font-semibold text-ink">Sayfa yüklenemedi</h1>
+      <p className="mt-1 text-sm text-muted">Beklenmeyen bir hata oluştu. Tekrar deneyin; sorun sürerse sunucu kayıtlarına bakın.</p>
       <button
         type="button"
         onClick={reset}

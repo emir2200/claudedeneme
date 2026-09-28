@@ -18,8 +18,3 @@ export function heatColor(t: number | null | undefined): string {
   return t === null || t === undefined || !Number.isFinite(t) ? HEAT_EMPTY : HEAT_RAMP[heatStep(t)]!;
 }
 
-/** Hücre üstü metin: ilk dört kademede açık, sonrakilerde koyu mürekkep (≥ 4.4:1). */
-export function heatInk(t: number | null | undefined): string {
-  if (t === null || t === undefined || !Number.isFinite(t)) return '#aeb4c2';
-  return heatStep(t) <= 3 ? '#ffffff' : '#0b0d12';
-}
