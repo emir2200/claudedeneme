@@ -1,0 +1,230 @@
+// Memecoin Haritası — PostgreSQL şeması (Prisma 7)
+//
+// Tasarım notları:
+// - Tüm zaman damgaları UTC. Saatlik kovalar `hourStart` (dakika = 0) ile anahtarlanır.
+// - USD metrikleri analitik amaçlı olduğu için `Float` (double precision) tutulur;
+//   muhasebe hassasiyeti gerekmez, sıralama/oran hesapları için yeterlidir.
+// - Ana tablolar: Token, ChainStats, VolumeByHour, SocialMetrics.
+//   Yardımcı tablolar: LaunchDaily (100K sayacı), WhaleTrade, SmartWallet, SyncCursor.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Platformun takip ettiği ağlar.
+enum Chain {
+  SOLANA
+  BSC
+  ROBINHOOD
+}
+
+/// Token'ın doğduğu launchpad (adres/DEX kimliğinden sezgisel olarak çıkarılır).
+enum Launchpad {
+  PUMP_FUN
+  FOUR_MEME
+  OTHER
+}
+
+enum SocialSource {
+  X
+  TELEGRAM
+  FARCASTER
+  /// LunarCrush / Kaito gibi birden çok ağı birleştiren sağlayıcılar.
+  AGGREGATED
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+/// Takip evrenindeki her memecoin. Piyasa alanları worker tarafından ~5 dakikada bir
+/// en likit havuzdan (DEXScreener) güncellenir.
+model Token {
+  id        String    @id @default(cuid())
+  chain     Chain
+  /// Solana mint adresi (base58) veya EVM kontrat adresi (küçük harf hex).
+  address   String
+  symbol    String
+  name      String
+  launchpad Launchpad @default(OTHER)
+  /// Narrative etiketleri (ör. "ai", "cat"). Bkz. src/lib/analytics/narratives.ts
+  narratives String[]
+
+  // En likit havuz
+  pairAddress  String?
+  dexId        String?
+  quoteAddress String?
+
+  poolCreatedAt   DateTime?
+  firstSeenAt     DateTime  @default(now())
+  lastRefreshedAt DateTime?
+  /// false olduğunda token artık periyodik olarak yenilenmez (ölü/likiditesiz).
+  isActive        Boolean   @default(true)
+
+  // Son piyasa görüntüsü
+  priceUsd          Float?
+  /// Quote token cinsinden fiyat (EVM swap loglarını USD'ye çevirmek için).
+  priceNative       Float?
+  priceChange1hPct  Float?
+  priceChange24hPct Float?
+  marketCapUsd      Float?
+  fdvUsd            Float?
+  liquidityUsd      Float?
+  volume1hUsd       Float?
+  volume24hUsd      Float?
+  txCount1h         Int?
+  txCount24h        Int?
+  peakMarketCapUsd  Float?
+
+  // 100K eşiği (bkz. src/lib/analytics/milestones.ts)
+  /// Eşiği art arda sağlayan örnek sayısı (manipülasyon/fitil filtresi).
+  milestoneStreak    Int       @default(0)
+  /// Mevcut serinin başladığı örnek zamanı.
+  milestonePendingAt DateTime?
+  /// Eşiğin ilk kez onaylandığı an (serinin başlangıcı). Ömür boyu bir kez yazılır.
+  milestone100kAt    DateTime?
+
+  socialMetrics SocialMetrics[]
+  whaleTrades   WhaleTrade[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chain, address])
+  @@index([chain, milestone100kAt])
+  @@index([chain, isActive, volume24hUsd])
+  @@index([chain, poolCreatedAt])
+  @@map("tokens")
+}
+
+/// Zincir düzeyinde "durum" görüntüsü: saat başına bir satır. İçinde bulunulan saatin
+/// satırı her yenilemede üzerine yazılır (canlı), kapanan saatler kesinleşir.
+/// Activity Index geçmişi (7 günlük persentil penceresi) bu tablodan okunur.
+model ChainStats {
+  id              BigInt   @id @default(autoincrement())
+  chain           Chain
+  hourStart       DateTime
+  capturedAt      DateTime
+  volume1hUsd     Float
+  volume24hUsd    Float
+  txCount1h       Int
+  txCount24h      Int
+  newPools1h      Int
+  newPools24h     Int
+  /// Zincir TVL'i (DefiLlama). Kaynak yanıt vermezse null.
+  tvlUsd          Float?
+  /// Zincir geneli DEX hacmi (DefiLlama) — memecoin evreni dışındaki bağlam için.
+  dexVolume24hUsd Float?
+  activeTokens    Int
+  /// 0–100 arası Activity Index (hesaplandığı andaki değer).
+  activityIndex   Float?
+
+  @@unique([chain, hourStart])
+  @@index([hourStart])
+  @@map("chain_stats")
+}
+
+/// Saatlik memecoin DEX "olgu" tablosu: toplanabilir metrikler. 24x7 trade zamanı
+/// matrisi bu tablodan üretilir.
+model VolumeByHour {
+  chain         Chain
+  hourStart     DateTime
+  volumeUsd     Float
+  txCount       Int
+  buyCount      Int
+  sellCount     Int
+  /// Saat kapanışında cüzdan başına işlem sayısına göre sınıflandırılır (finalizeHour).
+  botTxCount    Int      @default(0)
+  humanTxCount  Int      @default(0)
+  /// Hacim ağırlıklı |1s fiyat değişimi| (%), volatilite vekili.
+  volatilityPct Float
+  newPools      Int
+  updatedAt     DateTime @updatedAt
+
+  @@id([chain, hourStart])
+  @@index([hourStart])
+  @@map("volume_by_hour")
+}
+
+/// Token başına saatlik sosyal metrikler (kaynak bazında).
+model SocialMetrics {
+  id            BigInt       @id @default(autoincrement())
+  tokenId       String
+  token         Token        @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  source        SocialSource
+  hourStart     DateTime
+  mentions      Int
+  engagements   Int
+  uniqueAuthors Int
+  /// 0..1 arası olumlu duygu oranı.
+  sentiment     Float?
+
+  @@unique([tokenId, source, hourStart])
+  @@index([hourStart])
+  @@map("social_metrics")
+}
+
+/// Günlük (UTC) 100K+ çıkış sayacı.
+model LaunchDaily {
+  chain       Chain
+  day         DateTime @db.Date
+  /// O gün 100K eşiğini ilk kez aşan token sayısı.
+  crossed100k Int
+  /// O gün havuzu açılan (keşfedilen) yeni token sayısı.
+  newTokens   Int
+  /// Launchpad kırılımı, ör. {"PUMP_FUN": 120, "OTHER": 31}
+  byLaunchpad Json
+  updatedAt   DateTime @updatedAt
+
+  @@id([chain, day])
+  @@map("launch_daily")
+}
+
+/// Eşik üstü (varsayılan $10K) swaplar.
+model WhaleTrade {
+  /// `${chain}:${txHash}:${logIndex}` — tekrar gelen webhook'larda idempotentlik sağlar.
+  id           String    @id
+  chain        Chain
+  tokenId      String?
+  token        Token?    @relation(fields: [tokenId], references: [id], onDelete: SetNull)
+  tokenAddress String
+  tokenSymbol  String?
+  wallet       String
+  walletLabel  String?
+  isSmartMoney Boolean   @default(false)
+  side         TradeSide
+  usdValue     Float
+  txHash       String
+  blockTime    DateTime
+
+  @@index([blockTime])
+  @@index([chain, blockTime])
+  @@map("whale_trades")
+}
+
+/// "Smart money" olarak işaretlenen cüzdanlar (manuel liste veya dış etiket sağlayıcısı).
+model SmartWallet {
+  chain   Chain
+  address String
+  label   String
+  source  String?
+  addedAt DateTime @default(now())
+
+  @@id([chain, address])
+  @@map("smart_wallets")
+}
+
+/// Worker'ların kaldığı yeri tutar (ör. EVM log taramasında son blok).
+model SyncCursor {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("sync_cursors")
+}
