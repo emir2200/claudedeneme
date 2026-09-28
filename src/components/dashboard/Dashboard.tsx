@@ -34,8 +34,8 @@ export function Dashboard({ initial }: { initial: DashboardSnapshot }) {
           <NarrativeTrends narratives={data.narratives} rising={data.risingNarrative} />
         </div>
         <div className="flex min-w-0 flex-col gap-4 lg:col-span-2 lg:grid lg:grid-cols-2 xl:col-span-3 xl:flex">
-          <CoinOfTheDay coin={data.coinOfTheDay} leaders={data.hypeLeaders} />
-          <WhaleFeed report={data.whales} generatedAt={data.generatedAt} />
+          <CoinOfTheDay coin={data.coinOfTheDay} leaders={data.hypeLeaders} demo={data.mode === 'demo'} />
+          <WhaleFeed report={data.whales} generatedAt={data.generatedAt} demo={data.mode === 'demo'} />
         </div>
       </main>
 

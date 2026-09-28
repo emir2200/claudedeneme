@@ -8,7 +8,7 @@ import type { WhaleReport } from '@/lib/types';
 import { ChainBadge, ChainTag } from '../ui/ChainBadge';
 import { Panel } from '../ui/Panel';
 
-export function WhaleFeed({ report, generatedAt }: { report: WhaleReport; generatedAt: string }) {
+export function WhaleFeed({ report, generatedAt, demo }: { report: WhaleReport; generatedAt: string; demo: boolean }) {
   const [smartOnly, setSmartOnly] = useState(false);
   const now = Date.parse(generatedAt);
   const trades = smartOnly ? report.trades.filter((t) => t.isSmartMoney) : report.trades;
@@ -57,7 +57,8 @@ export function WhaleFeed({ report, generatedAt }: { report: WhaleReport; genera
         {trades.length === 0 ? <li className="py-4 text-center text-xs text-muted">Kayıt yok</li> : null}
         {trades.map((t) => {
           const buy = t.side === 'BUY';
-          const explorer = CHAINS[t.chain].explorerTxUrl;
+          // Demo işlemleri uydurmadır; blok gezgininde karşılıkları olmadığı için bağlantı verilmez.
+          const explorer = demo ? null : CHAINS[t.chain].explorerTxUrl;
           return (
             <li key={t.id} className="rounded-md border border-line/60 bg-raised/30 px-2 py-1.5">
               <div className="flex items-center justify-between gap-2 text-xs">

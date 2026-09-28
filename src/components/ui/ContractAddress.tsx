@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, ExternalLink, ShieldAlert } from 'lucide-react';
+import { Check, Copy, ExternalLink, Info, ShieldAlert } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { tokenLinks, type ChainId } from '@/lib/chains';
 
@@ -9,8 +9,20 @@ type CopyState = 'idle' | 'copied' | 'selected';
 /**
  * Tam kontrat adresi (CA). Popüler memecoin'lerin aynı sembolle çok sayıda sahte kopyası
  * çıktığı için adres kısaltılmadan, seçilebilir ve kopyalanabilir biçimde gösterilir.
+ * Demo modunda adres uydurmadır: kopyalama ve doğrulama bağlantıları gizlenir, açıkça
+ * "örnek" olarak işaretlenir.
  */
-export function ContractAddress({ chain, address, symbol }: { chain: ChainId; address: string; symbol: string }) {
+export function ContractAddress({
+  chain,
+  address,
+  symbol,
+  demo,
+}: {
+  chain: ChainId;
+  address: string;
+  symbol: string;
+  demo: boolean;
+}) {
   const [state, setState] = useState<CopyState>('idle');
   const codeRef = useRef<HTMLElement>(null);
 
@@ -32,6 +44,22 @@ export function ContractAddress({ chain, address, symbol }: { chain: ChainId; ad
       setState('selected');
     }
   };
+
+  if (demo) {
+    return (
+      <div className="mt-3 rounded-md border border-line bg-page/60 p-2.5">
+        <span className="text-[11px] font-semibold tracking-wide text-muted uppercase">CA · demo örneği</span>
+        <code className="mt-1.5 block font-mono text-[12px] leading-snug break-all text-muted">{address}</code>
+        <p className="mt-1.5 flex items-start gap-1.5 text-[11px] leading-snug text-ink-2">
+          <Info className="mt-px size-3.5 shrink-0 text-accent" aria-hidden />
+          <span>
+            Bu adres simülasyonun uydurduğu bir örnektir, gerçek bir token’a ait değildir. Kopyalama ve doğrulama
+            bağlantıları canlı modda, gerçek adreslerle açılır.
+          </span>
+        </p>
+      </div>
+    );
+  }
 
   const label = state === 'copied' ? 'Kopyalandı' : state === 'selected' ? 'Seçildi, Ctrl+C' : 'Kopyala';
   const Icon = state === 'copied' ? Check : Copy;

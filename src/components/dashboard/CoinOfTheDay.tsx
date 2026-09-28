@@ -28,7 +28,7 @@ function age(hours: number | null) {
   return hours < 48 ? `${Math.round(hours)} sa` : `${Math.round(hours / 24)} gün`;
 }
 
-export function CoinOfTheDay({ coin, leaders }: { coin: HypeToken | null; leaders: HypeToken[] }) {
+export function CoinOfTheDay({ coin, leaders, demo }: { coin: HypeToken | null; leaders: HypeToken[]; demo: boolean }) {
   return (
     <Panel
       title="Günün Coin’i"
@@ -59,7 +59,7 @@ export function CoinOfTheDay({ coin, leaders }: { coin: HypeToken | null; leader
               <div className="text-5xl leading-none font-semibold text-ink">{coin.hypeScore}</div>
             </div>
           </div>
-          <ContractAddress chain={coin.chain} address={coin.address} symbol={coin.symbol} />
+          <ContractAddress chain={coin.chain} address={coin.address} symbol={coin.symbol} demo={demo} />
           <Meter value={coin.hypeScore} color={ACCENT} label="Hype skoru" className="mt-3" />
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
