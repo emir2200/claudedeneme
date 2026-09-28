@@ -9,7 +9,7 @@ ve panele nasıl ulaştırdığını açıklar. Algoritmaların formülleri içi
 ```mermaid
 flowchart LR
   subgraph Kaynaklar
-    GT[GeckoTerminal<br/>yeni havuzlar]
+    GT[GeckoTerminal<br/>trend + yeni havuzlar]
     DS[DEXScreener<br/>token/havuz verisi]
     DL[DefiLlama<br/>TVL + zincir DEX hacmi]
     LC[LunarCrush<br/>saatlik sosyal seri]
@@ -87,7 +87,7 @@ Zamanlayıcı (`src/server/scheduler.ts`) duvar saatine hizalıdır ve her job i
 
 | Job | Periyot | Kaynak | Yazdığı yer | Ne yapar |
 | --- | --- | --- | --- | --- |
-| `discoverTokens` | 2 dk (+10 sn) | GeckoTerminal `new_pools` (3 sayfa × 3 zincir) | `tokens` | Yeni token'ları ekler; launchpad ve narrative etiketlerini atar |
+| `discoverTokens` | 2 dk (+10 sn) | GeckoTerminal `trending_pools` (2 sayfa) + `new_pools` (3 sayfa), 3 zincir | `tokens` | Günün aktif coin'lerini ve yeni açılan token'ları ekler; WSOL/USDC/WBNB gibi memecoin olmayanları eler; launchpad ve narrative etiketlerini atar |
 | `refreshMarkets` | 5 dk (+30 sn) | DEXScreener `tokens/v1` (30'arlı), DefiLlama | `tokens`, `volume_by_hour`, `chain_stats`, `launch_daily` | Piyasa verisini yeniler, 100K eşiğini ilerletir, saatlik zincir satırlarını ve Activity Index'i yazar |
 | `evmWhales` | 1 dk (+5 sn) | BSC / Robinhood RPC `eth_getLogs` | `whale_trades`, Redis sayaçları | V2 `Swap` loglarından balina swaplarını ve cüzdan aktivitesini çıkarır |
 | `socialPulse` | 15 dk (+3 dk) | LunarCrush topic time-series | `social_metrics` | İlk 40 token'ın saatlik mention/etkileşim/duygu serisini yazar |
@@ -150,7 +150,7 @@ Veri büyüdüğünde TimescaleDB hypertable'a çevrilip (`SELECT create_hyperta
 | Sağlayıcı | Uç nokta | Kullanım | Anahtar | Sınır (belgelenen) | Durum |
 | --- | --- | --- | --- | --- | --- |
 | **DEXScreener** | `GET /tokens/v1/{chainId}/{adresler}` | Fiyat, MCap/FDV, likidite, 1s/24s hacim, tx | Yok | ~300 istek/dk, istek başına 30 adres | Uygulandı |
-| **GeckoTerminal** | `GET /networks/{network}/new_pools` | Yeni havuz/token keşfi | Yok | ~30 istek/dk | Uygulandı |
+| **GeckoTerminal** | `GET /networks/{network}/trending_pools`, `/new_pools` | Aktif ve yeni token keşfi | Yok | ~30 istek/dk | Uygulandı |
 | **DefiLlama** | `GET /v2/chains`, `GET /overview/dexs/{chain}` | Zincir TVL'i, zincir geneli DEX hacmi | Yok | Cömert | Uygulandı |
 | **LunarCrush v4** | `GET /public/topic/{topic}/time-series/v1` | Saatlik mention, etkileşim, katkıcı, duygu | Var | Plana bağlı | Uygulandı |
 | **Helius** | Enhanced webhook | Solana swapları (balina + bot/insan) | Var | Plana bağlı | Uygulandı |

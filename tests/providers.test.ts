@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { detectLaunchpad } from '@/lib/analytics/launchpads';
+import { detectLaunchpad, isNonMemeToken } from '@/lib/analytics/launchpads';
 import { summarizeToken, type DexPair } from '@/server/providers/dexscreener';
 import { decodeSwap, isBaseToken0 } from '@/server/providers/evmSwaps';
-import { parseNewPools } from '@/server/providers/geckoterminal';
+import { parsePools } from '@/server/providers/geckoterminal';
 import { parseHeliusSwaps } from '@/server/providers/helius';
 
 const pair = (over: Partial<DexPair> & { liq: number; vol: number }): DexPair => ({
@@ -44,7 +44,7 @@ describe('DEXScreener özetleme', () => {
 
 describe('GeckoTerminal yeni havuzlar', () => {
   it('JSON:API yanıtını dahil edilen token kayıtlarıyla eşler', () => {
-    const pools = parseNewPools(
+    const pools = parsePools(
       {
         data: [
           {
@@ -75,6 +75,13 @@ describe('launchpad sezgisi', () => {
     expect(detectLaunchpad('solana', 'Abc123', 'pumpswap')).toBe('PUMP_FUN');
     expect(detectLaunchpad('bsc', '0xABC4444')).toBe('FOUR_MEME');
     expect(detectLaunchpad('robinhood', '0xabc4444')).toBe('OTHER');
+  });
+
+  it('sarılı native coin ve stablecoin’leri memecoin evrenine almaz', () => {
+    expect(isNonMemeToken('solana', 'So11111111111111111111111111111111111111112', 'SOL')).toBe(true);
+    expect(isNonMemeToken('bsc', '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', 'WBNB')).toBe(true);
+    expect(isNonMemeToken('solana', 'BaskaMint', 'usdc')).toBe(true);
+    expect(isNonMemeToken('solana', 'MeowMintpump', 'MEOW')).toBe(false);
   });
 });
 

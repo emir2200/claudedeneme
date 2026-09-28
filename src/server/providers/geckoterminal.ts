@@ -1,5 +1,6 @@
-// GeckoTerminal — yeni havuz keşfi.
-// Uç nokta: GET /networks/{network}/new_pools?page=N&include=base_token (JSON:API biçimi).
+// GeckoTerminal — havuz keşfi (yeni ve trend havuzlar).
+// Uç noktalar: GET /networks/{network}/new_pools ve /networks/{network}/trending_pools
+// (?page=N&include=base_token, JSON:API biçimi; ikisi aynı havuz kaydını döner).
 // Ücretsiz katman ~30 istek/dk. Anahtar gerekmez.
 
 import { z } from 'zod';
@@ -42,18 +43,20 @@ export interface DiscoveredPool {
 
 const limiter = new RateLimiter(25);
 
-export async function fetchNewPools(network: string, page = 1): Promise<DiscoveredPool[]> {
+export type PoolFeed = 'new_pools' | 'trending_pools';
+
+export async function fetchPools(network: string, feed: PoolFeed, page = 1): Promise<DiscoveredPool[]> {
   const base = getConfig().GECKOTERMINAL_BASE_URL;
-  const url = `${base}/networks/${encodeURIComponent(network)}/new_pools?page=${page}&include=base_token`;
+  const url = `${base}/networks/${encodeURIComponent(network)}/${feed}?page=${page}&include=base_token`;
   const res = await fetchJson(url, {
     schema: responseSchema,
     limiter,
     headers: { accept: 'application/json;version=20230302' },
   });
-  return parseNewPools(res, network);
+  return parsePools(res, network);
 }
 
-export function parseNewPools(res: z.infer<typeof responseSchema>, network: string): DiscoveredPool[] {
+export function parsePools(res: z.infer<typeof responseSchema>, network: string): DiscoveredPool[] {
   const tokens = new Map((res.included ?? []).filter((i) => i.type === 'token').map((i) => [i.id, i.attributes]));
   return res.data.flatMap((pool) => {
     const tokenId = pool.relationships.base_token.data.id;
