@@ -1,0 +1,10 @@
+# Rojo ile derlenen place dosyaları
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Editör eklentilerinin ürettiği dosyalar
+sourcemap.json

@@ -1,0 +1,3 @@
+# Bu projenin kullandığı araçlar. Kurmak için proje klasöründe: rokit install
+[tools]
+rojo = "rojo-rbx/rojo@7.4.4"
