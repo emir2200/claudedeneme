@@ -14,7 +14,7 @@ konuşulan coin'ini ve narrative'ini, trade için en yoğun saatleri tek ekranda
 | --- | --- | --- |
 | **Zincir Sıcaklık Haritası** | 3 zincir için 0–100 Activity Index; hacim (24s/1s), işlem sayısı, yeni havuz, TVL ısı hücreleri; 1 saatlik hacim payı ("sıcak para nerede?") | Kendi 7 günlük geçmişine göre persentil momentumu (%65) + hacim baskınlığı (%35) |
 | **100K+ Çıkış Sayacı** | Günlük (UTC) $100K piyasa değeri/likidite eşiğini ilk kez aşan token sayısı; bugünün temposu, 14 günlük karşılaştırmalı çubuk grafik, 30 günlük eğilim | 2 ardışık örnekle onay, manipülasyon filtresi, launchpad'den bağımsız |
-| **Günün Coin'i & Narrative** | Hype skoru en yüksek token; sosyal hacim, Vol/MCap, sosyal/likidite oranı, risk bayrakları; en hızlı yükselen narrative | Etkileşim, mention hızı, devir ve fiyat ivmesinin persentil ağırlıklı toplamı |
+| **Günün Coin'i & Narrative** | Hype skoru en yüksek token; sahte kopyalara karşı tam kontrat adresi (CA), kopyalama düğmesi ve Solscan/BscScan/DEXScreener bağlantıları; sosyal hacim, Vol/MCap, sosyal/likidite oranı, risk bayrakları; en hızlı yükselen narrative | Etkileşim, mention hızı, devir ve fiyat ivmesinin persentil ağırlıklı toplamı |
 | **En Aktif Trade Zamanı** | 24 saat × 7 gün ısı matrisi, "şu an aktif mi?", son 4 saatin en sıcağı, haftanın en iyi 3 saatlik penceresi (yerel saat / UTC) | 4 haftalık medyan hacim + volatilite + insan işlem payı |
 | **Smart Money & Balinalar** | $10K+ swaplar, smart money etiketleri, zincir başına 1 saatlik net akış | Helius webhook + EVM `Swap` logları |
 
@@ -56,6 +56,7 @@ koyar. Web katmanı yalnızca bu snapshot'ı okur.
 | `HELIUS_WEBHOOK_SECRET` | opsiyonel | Solana balina swapları için webhook yetkilendirmesi |
 | `BSC_RPC_URL`, `ROBINHOOD_RPC_URL` | opsiyonel | EVM balina taraması |
 | `ROBINHOOD_*` | kontrol edin | Robinhood Chain sağlayıcı kimlikleri (aşağıya bakın) |
+| `NEXT_PUBLIC_ROBINHOOD_EXPLORER_TX_URL`, `…_TOKEN_URL` | opsiyonel | Robinhood Chain blok gezgini bağlantıları; boşsa bağlantı gösterilmez |
 | `MILESTONE_USD`, `WHALE_MIN_USD`, `BOT_TX_PER_HOUR` | — | Eşikler |
 
 Tam liste: [`.env.example`](.env.example). Helius webhook'u için: Helius panelinde "enhanced"

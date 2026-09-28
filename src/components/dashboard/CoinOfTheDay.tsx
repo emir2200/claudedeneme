@@ -3,9 +3,10 @@ import { LAUNCHPAD_NAMES } from '@/lib/analytics/launchpads';
 import { DEFAULT_HYPE_FILTERS, RISK_FLAG_TEXT } from '@/lib/analytics/hype';
 import { NARRATIVE_BY_SLUG } from '@/lib/analytics/narratives';
 import { CHAINS } from '@/lib/chains';
-import { formatNumber, formatPrice, formatRatio, formatUsd, shortAddress } from '@/lib/format';
+import { formatNumber, formatPrice, formatRatio, formatUsd } from '@/lib/format';
 import type { HypeToken } from '@/lib/types';
 import { ChainBadge, ChainTag } from '../ui/ChainBadge';
+import { ContractAddress } from '../ui/ContractAddress';
 import { Delta } from '../ui/Delta';
 import { Meter } from '../ui/Meter';
 import { Panel } from '../ui/Panel';
@@ -51,15 +52,14 @@ export function CoinOfTheDay({ coin, leaders }: { coin: HypeToken | null; leader
                 </span>
               </div>
               <div className="mt-1 truncate font-mono text-2xl font-semibold text-ink">${coin.symbol}</div>
-              <div className="truncate text-xs text-muted">
-                {coin.name} · <span className="font-mono">{shortAddress(coin.address)}</span>
-              </div>
+              <div className="truncate text-xs text-muted">{coin.name}</div>
             </div>
             <div className="shrink-0 text-right">
               <div className="text-[11px] text-muted">Hype skoru</div>
               <div className="text-5xl leading-none font-semibold text-ink">{coin.hypeScore}</div>
             </div>
           </div>
+          <ContractAddress chain={coin.chain} address={coin.address} symbol={coin.symbol} />
           <Meter value={coin.hypeScore} color={ACCENT} label="Hype skoru" className="mt-3" />
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
