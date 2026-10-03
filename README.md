@@ -12,5 +12,6 @@ her modelin klasöründe kurulum ve ayarlar anlatılır.
 | Kristal Anka | [`kristalanka/KristalAnka.rbxmx`](kristalanka/KristalAnka.rbxmx) | Camdan anka kuşu; havada süzülür, kanat çırpar, kurdeleleri dalgalanır, çığlık atınca ışık patlaması saçar. [Ayrıntılar](kristalanka/README.md) |
 | Orman Örümceği | [`orumcek/OrmanOrumcegi.rbxmx`](orumcek/OrmanOrumcegi.rbxmx) | Desenli karınlı yeşil dev örümcek; ayakları yere basılı kalır, bacak kaldırır, dişlerini tıkırdatır, şahlanıp zehir püskürtür. [Ayrıntılar](orumcek/README.md) |
 | Raptor | [`raptor/Raptor.rbxmx`](raptor/Raptor.rbxmx) | Mavimsi gri, sırtı mavi şeritli raptor; kuş gibi bakınır, göz kırpar, orak pençesini yere vurur, çömelip öne atılarak çığlık atar. [Ayrıntılar](raptor/README.md) |
+| Dokuz Kuyruklu Tilki | [`tilki/DokuzKuyrukluTilki.rbxmx`](tilki/DokuzKuyrukluTilki.rbxmx) | Haleli, kırmızı işaretli beyaz kitsune; dokuz kuyruğu ayrı ayrı dalgalanır, pati kaldırır, ulurken etrafında mavi tilki ateşleri döner. [Ayrıntılar](tilki/README.md) |
 
 Studio'da: Explorer → **Workspace**'e sağ tık → **Insert from File...** → `.rbxmx` dosyasını seçin, sonra **Play**.
