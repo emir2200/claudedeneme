@@ -14,5 +14,6 @@ her modelin klasöründe kurulum ve ayarlar anlatılır.
 | Raptor | [`raptor/Raptor.rbxmx`](raptor/Raptor.rbxmx) | Mavimsi gri, sırtı mavi şeritli raptor; kuş gibi bakınır, göz kırpar, orak pençesini yere vurur, çömelip öne atılarak çığlık atar. [Ayrıntılar](raptor/README.md) |
 | Dokuz Kuyruklu Tilki | [`tilki/DokuzKuyrukluTilki.rbxmx`](tilki/DokuzKuyrukluTilki.rbxmx) | Haleli, kırmızı işaretli beyaz kitsune; dokuz kuyruğu ayrı ayrı dalgalanır, pati kaldırır, ulurken etrafında mavi tilki ateşleri döner. [Ayrıntılar](tilki/README.md) |
 | Lav Golemi | [`golem/LavGolemi.rbxmx`](golem/LavGolemi.rbxmx) | Lav çatlaklı bazalt dev; çatlakları kalp atışıyla parlar, yumruklarını kaldırıp yere vurur, lav şok dalgası yayar, kamerayı sarsar. [Ayrıntılar](golem/README.md) |
+| Zırhlı Gergedan | [`gergedan/ZirhliGergedan.rbxmx`](gergedan/ZirhliGergedan.rbxmx) | Kırık zırhlı, altın boynuzlu, ateş ağızlı gergedan; yeri eşeler, sırtından kıymıklar savrulur, öne atılıp boynuzunu savurur. [Ayrıntılar](gergedan/README.md) |
 
 Studio'da: Explorer → **Workspace**'e sağ tık → **Insert from File...** → `.rbxmx` dosyasını seçin, sonra **Play**.
